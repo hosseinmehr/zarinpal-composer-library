@@ -178,26 +178,8 @@ if (!$results['success']) {
 
 ### نصب در پروژه Laravel
 
-اگر پکیج روی Packagist ثبت نشده، مخزن GitHub را در `composer.json` پروژه اضافه کنید:
-
-```json
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/hosseinmehr/zarinpal-composer-library"
-        }
-    ],
-    "require": {
-        "hosseinmehr/zarinpal-composer-library": "^1.0.1"
-    }
-}
-```
-
-سپس:
-
 ```bash
-composer update hosseinmehr/zarinpal-composer-library
+composer require hosseinmehr/zarinpal-composer-library
 ```
 
 ### تنظیمات
