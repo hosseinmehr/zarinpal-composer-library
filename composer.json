@@ -1,6 +1,7 @@
 {
     "name": "hosseinmehr/zarinpal-composer-library",
     "description": "کتابخانه PHP برای اتصال به درگاه پرداخت زرین‌پال (API v4)",
+    "version": "1.0.1",
     "license": "GPL-2.0-only",
     "type": "library",
     "keywords": ["zarinpal", "payment", "gateway", "iran", "php"],

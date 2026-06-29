@@ -2,6 +2,8 @@
 
 [![Tests](https://github.com/hosseinmehr/zarinpal-composer-library/actions/workflows/php.yml/badge.svg)](https://github.com/hosseinmehr/zarinpal-composer-library/actions/workflows/php.yml)
 
+**نسخه:** 1.0.1
+
 کتابخانه PHP برای اتصال به [درگاه پرداخت زرین‌پال](https://www.zarinpal.com/docs/paymentGateway/) بر پایه **API v4**.
 
 این پکیج امکان ایجاد درخواست پرداخت، وریفای، استعلام، تسویه اشتراکی شناور، میان‌پی (چک‌اوت)، واحد پولی و اعتبارسنجی خودکار/غیرخودکار را فراهم می‌کند.
@@ -167,13 +169,48 @@ if (!$results['success']) {
 
 ## یکپارچه‌سازی با Laravel
 
-### نصب خودکار (Laravel 5.5+)
+این کتابخانه با **Laravel 5.5 به بالا** (شامل Laravel 8، 9، 10 و 11) سازگار است.
 
-Service Provider و Facade به‌صورت خودکار ثبت می‌شوند.
+امکانات Laravel:
+- **Service Provider** — `Zarinpal\Laravel\ZarinpalServiceProvider`
+- **Facade** — `Zarinpal::request()`، `Zarinpal::verify()` و سایر متدها
+- **Auto-discovery** — در Laravel 5.5+ پس از نصب، Provider و Facade خودکار ثبت می‌شوند
+
+### نصب در پروژه Laravel
+
+اگر پکیج روی Packagist ثبت نشده، مخزن GitHub را در `composer.json` پروژه اضافه کنید:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/hosseinmehr/zarinpal-composer-library"
+        }
+    ],
+    "require": {
+        "hosseinmehr/zarinpal-composer-library": "^1.0.1"
+    }
+}
+```
+
+سپس:
+
+```bash
+composer update hosseinmehr/zarinpal-composer-library
+```
 
 ### تنظیمات
 
-فایل `config/services.php`:
+در فایل `.env` پروژه:
+
+```env
+ZARINPAL_MERCHANT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+ZARINPAL_SANDBOX=true
+ZARINPAL_ZARINGATE=false
+```
+
+در فایل `config/services.php`:
 
 ```php
 'zarinpal' => [
@@ -183,10 +220,58 @@ Service Provider و Facade به‌صورت خودکار ثبت می‌شوند.
 ],
 ```
 
-یا انتشار فایل پیکربندی:
+یا انتشار فایل پیکربندی اختصاصی:
 
 ```bash
 php artisan vendor:publish --tag=zarinpal-config
+```
+
+### نمونه Controller
+
+```php
+use Illuminate\Http\Request;
+use Zarinpal\Laravel\Facade\Zarinpal;
+use Zarinpal\PaymentRequestOptions;
+
+public function pay()
+{
+    $options = (new PaymentRequestOptions(
+        auth()->user()->email,
+        auth()->user()->phone
+    ))
+        ->setCurrency(PaymentRequestOptions::CURRENCY_IRR)
+        ->setAutoVerify(false);
+
+    $result = Zarinpal::request(
+        route('payment.callback'),
+        10000,
+        'خرید سفارش #' . $order->id,
+        null,
+        null,
+        $options
+    );
+
+    if (!empty($result['Authority'])) {
+        return redirect(Zarinpal::redirectUrl());
+    }
+
+    return back()->withErrors($result['message_fa'] ?? 'خطا در اتصال به درگاه');
+}
+
+public function callback(Request $request)
+{
+    $result = Zarinpal::verify(
+        $request->get('Status'),
+        10000,
+        $request->get('Authority')
+    );
+
+    if ($result['Status'] === 'success') {
+        // پرداخت موفق — شماره تراکنش: $result['RefID']
+    }
+
+    return redirect()->route('home')->withErrors($result['message_fa'] ?? 'پرداخت ناموفق');
+}
 ```
 
 ### استفاده با Facade
@@ -204,6 +289,32 @@ $results = Zarinpal::request($callbackUrl, 10000, 'خرید', null, null, $optio
 if (!empty($results['Authority'])) {
     return redirect(Zarinpal::redirectUrl());
 }
+```
+
+### استفاده با Dependency Injection
+
+به‌جای Facade می‌توانید از container لاراول استفاده کنید:
+
+```php
+public function pay(\Zarinpal\Zarinpal $zarinpal)
+{
+    $result = $zarinpal->request(route('payment.callback'), 10000, 'خرید');
+    // ...
+}
+
+// یا:
+$zarinpal = app('Zarinpal');
+```
+
+### نکات Laravel
+
+1. **Laravel 11+** — همان روش کار می‌کند؛ فقط `services.php` را خودتان تنظیم کنید.
+2. **محیط تست** — در `.env` مقدار `ZARINPAL_SANDBOX=true` بگذارید.
+3. **Route نمونه:**
+
+```php
+Route::get('/payment', [PaymentController::class, 'pay'])->name('payment.pay');
+Route::get('/payment/callback', [PaymentController::class, 'callback'])->name('payment.callback');
 ```
 
 ## سازگاری با نسخه قبل
