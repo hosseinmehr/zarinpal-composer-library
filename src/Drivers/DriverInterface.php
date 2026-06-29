@@ -5,42 +5,66 @@ namespace Zarinpal\Drivers;
 interface DriverInterface
 {
     /**
-     * @param $inputs
+     * ایجاد درخواست پرداخت
      *
-     * @return array|redirect
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
      */
-    public function request($inputs);
+    public function request(array $inputs);
 
     /**
-     * @param $inputs
+     * وریفای تراکنش
      *
-     * @return array|redirect
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
      */
-    public function requestWithExtra($inputs);
+    public function verify(array $inputs);
 
     /**
-     * @param $inputs
+     * استعلام وضعیت تراکنش (بدون وریفای)
      *
-     * @return array
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
      */
-    public function verify($inputs);
+    public function inquiry(array $inputs);
 
     /**
-     * @param $inputs
+     * لیست تراکنش‌های وریفای‌نشده
      *
-     * @return array
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
      */
-    public function verifyWithExtra($inputs);
+    public function unverified(array $inputs);
 
     /**
-     * @param $inputs
+     * ریورس تراکنش
      *
-     * @return array
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
      */
-    public function setAddress($inputs);
+    public function reverse(array $inputs);
 
     /**
-     * activate sandbox mod for dev environment.
+     * محاسبه کارمزد
+     *
+     * @param array<string, mixed> $inputs
+     *
+     * @return array<string, mixed>
+     */
+    public function feeCalculation(array $inputs);
+
+    /**
+     * تنظیم آدرس پایه API
+     */
+    public function setAddress(string $baseUrl);
+
+    /**
+     * فعال‌سازی محیط سندباکس
      */
     public function enableSandbox();
 }

@@ -1,16 +1,10 @@
-<phpunit bootstrap="vendor/autoload.php">
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit bootstrap="vendor/autoload.php"
+         colors="true"
+         verbose="true">
     <testsuites>
-        <testsuite name="sandboxTest">
-            <file>./test/RestTestCase.php</file>
+        <testsuite name="Zarinpal Test Suite">
+            <directory>test</directory>
         </testsuite>
     </testsuites>
-    <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">./src</directory>
-            <exclude>
-                <directory suffix=".php">src/Drivers/lib</directory>
-                <directory suffix=".php">src/Laravel</directory>
-            </exclude>
-        </whitelist>
-    </filter>
 </phpunit>

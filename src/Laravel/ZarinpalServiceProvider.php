@@ -21,7 +21,10 @@ class ZarinpalServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton('Zarinpal', function () {
-            $merchantID = config('services.zarinpal.merchantID', config('Zarinpal.merchantID', 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX'));
+            $merchantID = config(
+                'services.zarinpal.merchantID',
+                config('Zarinpal.merchantID', 'XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX')
+            );
 
             $zarinpal = new Zarinpal($merchantID, $this->app->make(DriverInterface::class));
 
@@ -41,6 +44,10 @@ class ZarinpalServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/config/zarinpal.php' => config_path('zarinpal.php'),
+            ], 'zarinpal-config');
+        }
     }
 }

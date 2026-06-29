@@ -1,24 +1,37 @@
 {
-    "name": "zarinpal/zarinpal",
-    "description": "transaction request system for zarinpal",
+    "name": "hosseinmehr/zarinpal-composer-library",
+    "description": "کتابخانه PHP برای اتصال به درگاه پرداخت زرین‌پال (API v4)",
     "license": "GPL-2.0-only",
+    "type": "library",
+    "keywords": ["zarinpal", "payment", "gateway", "iran", "php"],
+    "homepage": "https://github.com/hosseinmehr/zarinpal-composer-library",
     "authors": [
         {
+            "name": "Hossein Mehr",
+            "homepage": "https://github.com/hosseinmehr"
+        },
+        {
             "name": "hooman naghiee",
-            "email": "hooman@zarinpal.com"
+            "email": "hooman@zarinpal.com",
+            "role": "Original Author"
         }
     ],
     "minimum-stability": "stable",
     "require": {
-        "guzzlehttp/guzzle": "^6.2"
+        "php": ">=7.2",
+        "guzzlehttp/guzzle": "^6.2|^7.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "6.3.*",
-        "satooshi/php-coveralls": "^1.0"
+        "phpunit/phpunit": "^8.5|^9.5"
     },
     "autoload": {
         "psr-4": {
             "Zarinpal\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Zarinpal\\Tests\\": "test/"
         }
     },
     "extra": {
@@ -30,5 +43,8 @@
                 "Zarinpal": "Zarinpal\\Laravel\\Facade\\Zarinpal"
             }
         }
+    },
+    "scripts": {
+        "test": "phpunit"
     }
 }

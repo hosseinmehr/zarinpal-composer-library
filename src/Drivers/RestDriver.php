@@ -4,194 +4,276 @@ namespace Zarinpal\Drivers;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use Zarinpal\ErrorCodes;
 
+/**
+ * درایور REST برای API v4 درگاه پرداخت زرین‌پال
+ */
 class RestDriver implements DriverInterface
 {
-    protected $baseUrl = 'https://www.zarinpal.com/pg/rest/WebGate/';
+    /** @var string */
+    protected $apiBaseUrl = 'https://payment.zarinpal.com/pg/v4/payment/';
+
+    /** @var string */
+    protected $redirectBaseUrl = 'https://www.zarinpal.com/pg/StartPay/';
 
     /**
-     * request driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function request($inputs)
+    public function request(array $inputs)
     {
-        $result = $this->restCall('PaymentRequest.json', $inputs);
+        $response = $this->apiCall('request.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return ['Authority' => $result['Authority']];
-        } else {
-            return ['error' => $result['Status']];
-        }
+        return $this->normalizeRequestResponse($response);
     }
 
     /**
-     * requestWithExtra driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function requestWithExtra($inputs)
+    public function verify(array $inputs)
     {
-        $result = $this->restCall('PaymentRequestWithExtra.json', $inputs);
+        $response = $this->apiCall('verify.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return ['Authority' => $result['Authority']];
-        } else {
-            return [
-                'Status'    => 'error',
-                'error'     => !empty($result['Status']) ? $result['Status'] : null,
-                'errorInfo' => !empty($result['errors']) ? $result['errors'] : null,
-            ];
-        }
+        return $this->normalizeVerifyResponse($response);
     }
 
     /**
-     * verify driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function verify($inputs)
+    public function inquiry(array $inputs)
     {
-        $result = $this->restCall('PaymentVerification.json', $inputs);
+        $response = $this->apiCall('inquiry.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return [
-                'Status' => 'success',
-                'RefID'  => $result['RefID'],
-            ];
-        } elseif ($result['Status'] == 101) {
-            return [
-                'Status' => 'verified_before',
-                'RefID'  => $result['RefID'],
-            ];
-        } else {
-            return [
-                'Status'    => 'error',
-                'error'     => !empty($result['Status']) ? $result['Status'] : null,
-                'errorInfo' => !empty($result['errors']) ? $result['errors'] : null,
-            ];
-        }
+        return $this->normalizeDataResponse($response);
     }
 
     /**
-     * verifyWithExtra driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function verifyWithExtra($inputs)
+    public function unverified(array $inputs)
     {
-        $result = $this->restCall('PaymentVerificationWithExtra.json', $inputs);
+        $response = $this->apiCall('unVerified.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return [
-                'Status'      => 'success',
-                'RefID'       => $result['RefID'],
-                'ExtraDetail' => $result['ExtraDetail'],
-            ];
-        } elseif ($result['Status'] == 101) {
-            return [
-                'Status'      => 'verified_before',
-                'RefID'       => $result['RefID'],
-                'ExtraDetail' => $result['ExtraDetail'],
-            ];
-        } else {
-            return [
-                'Status'    => 'error',
-                'error'     => !empty($result['Status']) ? $result['Status'] : null,
-                'errorInfo' => !empty($result['errors']) ? $result['errors'] : null,
-            ];
-        }
+        return $this->normalizeDataResponse($response);
     }
 
     /**
-     * unverifiedTransactions driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function unverifiedTransactions($inputs)
+    public function reverse(array $inputs)
     {
-        $result = $this->restCall('UnverifiedTransactions.json', $inputs);
+        $response = $this->apiCall('reverse.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return ['Status' => 'success', 'Authorities' => $result['Authorities']];
-        } else {
-            return [
-                'Status'    => 'error',
-                'error'     => !empty($result['Status']) ? $result['Status'] : null,
-                'errorInfo' => !empty($result['errors']) ? $result['errors'] : null,
-            ];
-        }
+        return $this->normalizeDataResponse($response);
     }
 
     /**
-     * refreshAuthority driver.
+     * @param array<string, mixed> $inputs
      *
-     * @param $inputs
-     *
-     * @return array
+     * @return array<string, mixed>
      */
-    public function refreshAuthority($inputs)
+    public function feeCalculation(array $inputs)
     {
-        $result = $this->restCall('RefreshAuthority.json', $inputs);
+        $response = $this->apiCall('feeCalculation.json', $inputs);
 
-        if ($result['Status'] == 100) {
-            return ['Status' => 'success', 'refreshed' => true];
-        } else {
-            return ['Status' => 'error', 'error' => $result['Status']];
-        }
+        return $this->normalizeDataResponse($response);
     }
 
     /**
-     * request rest and return the response.
-     *
-     * @param $uri
-     * @param $data
-     *
-     * @return mixed
+     * آدرس هدایت کاربر به درگاه پرداخت
      */
-    private function restCall($uri, $data)
+    public function getRedirectUrl(string $authority, bool $zarinGate = false): string
+    {
+        $url = $this->redirectBaseUrl . $authority;
+        if ($zarinGate) {
+            $url .= '/ZarinGate';
+        }
+
+        return $url;
+    }
+
+    public function setAddress(string $baseUrl)
+    {
+        $this->apiBaseUrl = rtrim($baseUrl, '/') . '/';
+    }
+
+    public function enableSandbox()
+    {
+        $this->apiBaseUrl = 'https://sandbox.zarinpal.com/pg/v4/payment/';
+        $this->redirectBaseUrl = 'https://sandbox.zarinpal.com/pg/StartPay/';
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array<string, mixed>
+     */
+    private function apiCall(string $uri, array $data)
     {
         try {
-            $client = new Client(['base_uri' => $this->baseUrl]);
+            $client = new Client([
+                'base_uri' => $this->apiBaseUrl,
+                'timeout' => 30,
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                ],
+            ]);
             $response = $client->request('POST', $uri, ['json' => $data]);
-
-            $rawBody = $response->getBody()->getContents();
-            $body = json_decode($rawBody, true);
+            $body = json_decode($response->getBody()->getContents(), true);
         } catch (RequestException $e) {
             $response = $e->getResponse();
-            $rawBody = is_null($response) ? '{"Status":-98,"message":"http connection error"}' : $response->getBody()->getContents();
-            $body = json_decode($rawBody, true);
+            if ($response !== null) {
+                $body = json_decode($response->getBody()->getContents(), true);
+            } else {
+                $body = [
+                    'data' => [],
+                    'errors' => ['message' => 'HTTP connection error', 'code' => -98],
+                ];
+            }
         }
 
-        if (!isset($result['Status'])) {
-            $result['Status'] = -99;
+        if (!is_array($body)) {
+            $body = ['data' => [], 'errors' => ['message' => 'Invalid JSON response', 'code' => -99]];
         }
 
         return $body;
     }
 
     /**
-     * @param mixed $baseUrl
+     * @param array<string, mixed> $response
      *
-     * @return void
+     * @return array<string, mixed>
      */
-    public function setAddress($baseUrl)
+    private function normalizeRequestResponse(array $response)
     {
-        $this->baseUrl = $baseUrl;
+        $code = ErrorCodes::extractCode($response);
+
+        if (ErrorCodes::isSuccess($code) && !empty($response['data']['authority'])) {
+            $data = $response['data'];
+
+            return [
+                'success' => true,
+                'code' => $code,
+                'message' => $data['message'] ?? ErrorCodes::messageEn($code),
+                'message_fa' => ErrorCodes::messageFa($code),
+                'Authority' => $data['authority'],
+                'authority' => $data['authority'],
+                'fee_type' => $data['fee_type'] ?? null,
+                'fee' => $data['fee'] ?? null,
+                'data' => $data,
+            ];
+        }
+
+        return $this->errorResponse($code, $response);
     }
 
-    public function enableSandbox()
+    /**
+     * @param array<string, mixed> $response
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizeVerifyResponse(array $response)
     {
-        $this->setAddress('https://sandbox.zarinpal.com/pg/rest/WebGate/');
+        $code = ErrorCodes::extractCode($response);
+
+        if ($code === ErrorCodes::SUCCESS) {
+            $data = $response['data'];
+
+            return [
+                'success' => true,
+                'Status' => 'success',
+                'code' => $code,
+                'message' => $data['message'] ?? ErrorCodes::messageEn($code),
+                'message_fa' => ErrorCodes::messageFa($code),
+                'RefID' => $data['ref_id'] ?? null,
+                'ref_id' => $data['ref_id'] ?? null,
+                'card_pan' => $data['card_pan'] ?? null,
+                'card_hash' => $data['card_hash'] ?? null,
+                'fee_type' => $data['fee_type'] ?? null,
+                'fee' => $data['fee'] ?? null,
+                'wages' => $data['wages'] ?? null,
+                'data' => $data,
+            ];
+        }
+
+        if ($code === ErrorCodes::ALREADY_VERIFIED) {
+            $data = $response['data'];
+
+            return [
+                'success' => true,
+                'Status' => 'verified_before',
+                'code' => $code,
+                'message' => $data['message'] ?? ErrorCodes::messageEn($code),
+                'message_fa' => ErrorCodes::messageFa($code),
+                'RefID' => $data['ref_id'] ?? null,
+                'ref_id' => $data['ref_id'] ?? null,
+                'card_pan' => $data['card_pan'] ?? null,
+                'card_hash' => $data['card_hash'] ?? null,
+                'fee_type' => $data['fee_type'] ?? null,
+                'fee' => $data['fee'] ?? null,
+                'wages' => $data['wages'] ?? null,
+                'data' => $data,
+            ];
+        }
+
+        return $this->errorResponse($code, $response);
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizeDataResponse(array $response)
+    {
+        $code = ErrorCodes::extractCode($response);
+
+        if (ErrorCodes::isSuccess($code) && !empty($response['data'])) {
+            $data = $response['data'];
+
+            return [
+                'success' => true,
+                'Status' => 'success',
+                'code' => $code,
+                'message' => $data['message'] ?? ErrorCodes::messageEn($code),
+                'message_fa' => ErrorCodes::messageFa($code),
+                'data' => $data,
+            ] + $data;
+        }
+
+        return $this->errorResponse($code, $response);
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     *
+     * @return array<string, mixed>
+     */
+    private function errorResponse(int $code, array $response)
+    {
+        $apiMessage = $response['message'] ?? ($response['errors']['message'] ?? null);
+
+        return [
+            'success' => false,
+            'Status' => 'error',
+            'code' => $code,
+            'error' => $code,
+            'message' => $apiMessage ?: ErrorCodes::messageEn($code),
+            'message_fa' => ErrorCodes::messageFa($code),
+            'error_type' => ErrorCodes::type($code),
+            'errorInfo' => $response['errors'] ?? $response,
+            'errors' => $response['errors'] ?? [],
+        ];
     }
 }
